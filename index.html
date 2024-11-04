@@ -3,96 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Расчет размеров листа</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-        }
-        header {
-            background: #0044cc;
-            color: #fff;
-            padding: 10px 20px;
-            text-align: center;
-        }
-        .container {
-            background: #fff;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            margin: auto;
-        }
-        .result {
-            margin-top: 20px;
-            padding: 10px;
-            background: #e6ffe6;
-            border: 1px solid #c2f0c2;
-            border-radius: 5px;
-            display: none; /* Скрываем результат до расчета */
-        }
-        footer {
-            text-align: center;
-            padding: 10px;
-            margin-top: 20px;
-        }
-    </style>
+    <title>Расчет Камня</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <h1>Расчет Искусственного Камня</h1>
+    <form id="stoneForm">
+        <label for="pieceCount">Количество кусочков:</label>
+        <input type="number" id="pieceCount" min="1" required>
 
-<header>
-    <h1>MindUp Neo</h1>
-    <h2>Расчет размеров листа</h2>
-</header>
+        <div id="piecesInput"></div>
 
-<div class="container">
-    <form id="calcForm">
-        <label for="width">Ширина листа (мм):</label>
-        <input type="number" id="width" required>
-        <br>
-        <label for="height">Высота листа (мм):</label>
-        <input type="number" id="height" required>
-        <br>
-        <label for="lengths">Длины заказов (введите через запятую):</label>
-        <input type="text" id="lengths" required>
-        <br>
-        <button type="button" onclick="calculate()">Рассчитать</button>
+        <button type="button" onclick="addPieceInputs()">Добавить размеры</button>
+        <button type="submit">Рассчитать</button>
     </form>
 
-    <div class="result" id="result">
-        <h3>Результаты расчета:</h3>
-        <p id="sheetsNeeded"></p>
-        <p id="remainder"></p>
-    </div>
-</div>
+    <div id="result"></div>
 
-<footer>
-    <p>Контактная информация | Социальные сети | Условия использования</p>
-</footer>
-
-<script>
-    function calculate() {
-        const width = parseFloat(document.getElementById('width').value);
-        const lengths = document.getElementById('lengths').value.split(',').map(Number);
-        const totalLength = lengths.reduce((acc, length) => acc + length, 0);
-        
-        const sheetsNeeded = Math.ceil(totalLength / width);
-        const remainder = totalLength % width;
-
-        if (totalLength <= width) {
-            document.getElementById('sheetsNeeded').textContent = `Необходимо листов: 1`;
-            document.getElementById('remainder').textContent = `Остаток: ${width - totalLength} мм`;
-        } else {
-            document.getElementById('sheetsNeeded').textContent = `Необходимо листов: ${sheetsNeeded}`;
-            document.getElementById('remainder').textContent = `Остаток: ${width - remainder} мм`;
-        }
-
-        // Показываем результаты
-        document.getElementById('result').style.display = 'block';
-    }
-</script>
-
+    <script src="script.js"></script>
 </body>
 </html>
