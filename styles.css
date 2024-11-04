@@ -19,3 +19,24 @@ input {
 button {
     margin-top: 10px;
 }
+
+#visualization {
+    margin-top: 20px;
+    border: 1px solid #000;
+    position: relative;
+    width: 800px;
+    height: 300px;
+    overflow: hidden;
+}
+
+.sheet {
+    position: absolute;
+    background-color: lightblue;
+    border: 1px solid #007BFF;
+}
+
+.piece {
+    position: absolute;
+    background-color: lightgreen;
+    border: 1px solid #28A745;
+}
