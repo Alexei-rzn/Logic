@@ -1,73 +1,91 @@
-document.getElementById('stoneForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // Предотвращаем отправку формы
-
-    const pieces = [];
-    const depths = Array.from(document.querySelectorAll('.depth')).map(elem => parseFloat(elem.value));
-    const widths = Array.from(document.querySelectorAll('.width')).map(elem => parseFloat(elem.value));
-
-    for (let i = 0; i < depths.length; i++) {
-        pieces.push({depth: depths[i], width: widths[i]});
-    }
-
-    const useGlue = confirm("Можно ли склеивать?");
-    const sheetSize = {width: 3680, depth: 760};
-
-    const result = calculateMaterial(pieces, useGlue, sheetSize);
-    visualizeCutting(pieces, sheetSize);
-
-    document.getElementById('result').innerText = result;
+document.getElementById('addPieceBtn').addEventListener('click', () => {
+    const piecesContainer = document.getElementById('piecesContainer');
+    const newPieceInput = document.createElement('input');
+    newPieceInput.type = 'number';
+    newPieceInput.className = 'pieceLength';
+    newPieceInput.value = '0';
+    piecesContainer.appendChild(newPieceInput);
 });
 
-function addPieceInputs() {
-    const piecesInput = document.getElementById('piecesInput');
-    const pieceIndex = piecesInput.children.length / 2 + 1; // Индекс кусочка
-    piecesInput.insertAdjacentHTML('beforeend', `
-        <label for="pieceDepth${pieceIndex}">Глубина кусочка ${pieceIndex}:</label>
-        <input type="number" id="pieceDepth${pieceIndex}" class="depth" required>
-        <label for="pieceWidth${pieceIndex}">Ширина кусочка ${pieceIndex}:</label>
-        <input type="number" id="pieceWidth${pieceIndex}" class="width" required>
-    `);
-}
+document.getElementById('calculateBtn').addEventListener('click', () => {
+    const sheetWidth = parseFloat(document.getElementById('sheetWidth').value);
+    const sheetLength = parseFloat(document.getElementById('sheetLength').value);
+    const pieceLengths = Array.from(document.getElementsByClassName('pieceLength')).map(input => parseFloat(input.value));
+    const canGlue = document.getElementById('canGlue').checked;
 
-function calculateMaterial(pieces, useGlue, sheetSize) {
-    const totalDepth = pieces.reduce((sum, piece) => sum + piece.depth, 0);
-    const columns = sheetsRequired(totalDepth, sheetSize.depth);
-    return `Потребуется ${columns} листа(ов) по ${sheetSize.width}х${sheetSize.depth} мм.`;
-}
+    const result = calculateStone(sheetWidth, sheetLength, pieceLengths, canGlue);
+    displayResult(result);
+});
 
-function sheetsRequired(totalDepth, sheetDepth) {
-    return Math.ceil(totalDepth / sheetDepth);
-}
+function calculateStone(sheetWidth, sheetLength, pieces, canGlue) {
+    const totalLength = pieces.reduce((sum, piece) => sum + piece, 0);
+    let sheetsNeeded = Math.ceil(totalLength / sheetLength);
+    let remainder = totalLength % sheetLength;
 
-function visualizeCutting(pieces, sheetSize) {
-    const visualizationDiv = document.getElementById('visualization');
-    visualizationDiv.innerHTML = ''; // Очищаем предыдущие визуализации
-
-    const sheetCount = sheetsRequired(pieces.reduce((sum, piece) => sum + piece.depth, 0), sheetSize.depth);
-
-    // Визуализируем каждый лист
-    for (let i = 0; i < sheetCount; i++) {
-        const sheetDiv = document.createElement('div');
-        sheetDiv.className = 'sheet';
-        sheetDiv.style.width = `${sheetSize.width}px`;
-        sheetDiv.style.height = `${sheetSize.depth}px`;
-        sheetDiv.style.left = `0px`;
-        sheetDiv.style.top = `${i * (sheetSize.depth + 10)}px`; // Отступы между листами
-        visualizationDiv.appendChild(sheetDiv);
-
-        // Визуализируем кусочки на листе
-        let currentHeight = 0;
-        pieces.forEach((piece, index) => {
-            if (currentHeight + piece.depth <= sheetSize.depth) {
-                const pieceDiv = document.createElement('div');
-                pieceDiv.className = 'piece';
-                pieceDiv.style.width = `${piece.width}px`;
-                pieceDiv.style.height = `${piece.depth}px`;
-                pieceDiv.style.left = `0px`;
-                pieceDiv.style.top = `${currentHeight}px`; // Расположение на листе
-                sheetDiv.appendChild(pieceDiv);
-                currentHeight += piece.depth; // Подсчет места на листе
-            }
-        });
+    if (canGlue) {
+        // Если можно склеивать
+        let joints = Math.floor(remainder / 500);
+        return { sheetsNeeded, remainder, joints, waste: remainder };
+    } else {
+        // Если нельзя склеивать, перебор всех комбинаций
+        const combinations = getCombinations(pieces, sheetLength);
+        const bestCombination = findBestCombination(combinations, sheetLength);
+        return {
+            sheetsNeeded: bestCombination.sheets,
+            totalWaste: bestCombination.waste,
+            joints: bestCombination.joints,
+            details: bestCombination.details
+        };
     }
+}
+
+function getCombinations(pieces, sheetLength) {
+    const results = [];
+    const totalPieces = pieces.length;
+
+    // Рекурсивная функция для создания комбинаций
+    function combine(startIndex, currentCombination) {
+        const currentLength = currentCombination.reduce((sum, piece) => sum + piece, 0);
+        if (currentLength <= sheetLength) {
+            results.push(currentCombination.slice());
+        }
+        for (let i = startIndex; i < totalPieces; i++) {
+            currentCombination.push(pieces[i]);
+            combine(i + 1, currentCombination);
+            currentCombination.pop();
+        }
+    }
+
+    combine(0, []);
+    return results;
+}
+
+function findBestCombination(combinations, sheetLength) {
+    let bestWaste = Infinity;
+    let bestDetails = [];
+    let sheets = 0;
+
+    combinations.forEach(combination => {
+        const totalLength = combination.reduce((sum, piece) => sum + piece, 0);
+        const waste = sheetLength - totalLength;
+        if (waste >= 0 && waste < bestWaste) {
+            bestWaste = waste;
+            bestDetails = combination;
+        }
+    });
+
+    sheets = Math.ceil(bestDetails.reduce((sum, piece) => sum + piece, 0) / sheetLength);
+
+    return { sheets, waste: bestWaste, joints: 0, details: bestDetails }; // Здесь можно добавить логику для стыков
+}
+
+function displayResult(result) {
+    const resultContainer = document.getElementById('result');
+    resultContainer.innerHTML = `
+        <h2>Результаты:</h2>
+        <p>Необходимо листов: ${result.sheetsNeeded}</p>
+        <p>Остаток: ${result.waste} мм</p>
+        <p>Количество стыков: ${result.joints}</p>
+        <p>Детали: ${result.details.join(', ')}</p>
+    `;
 }
